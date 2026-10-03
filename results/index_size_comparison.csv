@@ -1,0 +1,6 @@
+Dictionary,Size,Reduction vs first row (%)
+dictionary (Module 2),22169,0.0
+term_dictionary (Module 2),18081,18.44
+Inverted index - Pipeline A,14503,34.58
+Inverted index - Pipeline B,15928,28.15
+Inverted index - Pipeline C,15994,27.85

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b3b2e">
+    <title>Agriculture NLP Information Retrieval System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header Banner -->
+    <header class="header">
+        <div class="header-inner shell">
+            <div class="topline">
+                <a class="brand" href="#corpus">
+                    <span class="brand-mark">✦</span>
+                    <span>AgriNLP / Lab</span>
+                </a>
+                <div id="backend-status" class="status">Checking backend...</div>
+            </div>
+            <h1>Agriculture NLP Information Retrieval System</h1>
+            <p class="header-copy">
+                Natural language processing, subword tokenization, POS tagging, NER entity extraction, and IR search engine for agricultural research documents.
+            </p>
+        </div>
+    </header>
+
+    <!-- Multi-Page Navigation Bar -->
+    <div class="nav-bar-wrapper shell">
+        <nav class="nav-bar" id="main-nav">
+            <button class="nav-tab active" data-page="corpus">
+                <span class="nav-num">1</span>
+                <span>📁 Corpus &amp; Upload</span>
+                <span class="nav-pill" id="nav-corpus-count">30 Docs</span>
+            </button>
+            <button class="nav-tab" data-page="prep">
+                <span class="nav-num">2</span>
+                <span>🔤 Tokenization &amp; Prep</span>
+            </button>
+            <button class="nav-tab" data-page="ling">
+                <span class="nav-num">3</span>
+                <span>🏷️ Linguistics &amp; NER</span>
+            </button>
+            <button class="nav-tab" data-page="search">
+                <span class="nav-num">4</span>
+                <span>🔍 Search &amp; Index</span>
+            </button>
+            <button class="nav-tab" data-page="eval">
+                <span class="nav-num">5</span>
+                <span>📊 Pipeline Evaluation</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="shell">
+
+        <!-- ===================================================
+             PAGE 1: CORPUS & DOCUMENTS (#page-corpus)
+        ==================================================== -->
+        <div class="page-view active" id="page-corpus">
+            <div class="page-header">
+                <h2>📁 Corpus Management &amp; Document Matrix</h2>
+                <p>Upload multi-format documents (PDF, DOCX, CSV, JSON, JSONL, TXT) and inspect the assigned document matrix.</p>
+            </div>
+
+            <div class="card-grid">
+                <!-- Section 01: Upload -->
+                <section class="card feature full" id="document-upload">
+                    <span class="card-num">01</span>
+                    <h3>Document Upload &amp; Multi-Format Parser</h3>
+                    <p>Select agricultural documents (PDF, DOCX, JSON, JSONL, CSV, TXT) to automatically extract text and assign to the active corpus.</p>
+                    
+                    <input type="file" id="corpus-file" accept=".pdf,.docx,.json,.jsonl,.csv,.txt" aria-label="Upload document file">
+                    <button id="load-documents-btn">Upload &amp; Parse Documents ↗</button>
+                    
+                    <div id="upload-result" class="output"></div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-item"><strong>PDF, DOCX...</strong><span>Accepted Formats</span></div>
+                        <div class="metric-item"><strong id="metric-corpus-count">30</strong><span>Active Corpus Docs</span></div>
+                        <div class="metric-item"><strong>15</strong><span>NLP Analysis Modules</span></div>
+                    </div>
+                </section>
+
+                <!-- Section 02: Document Statistics & Matrix -->
+                <section class="card full" id="document-statistics">
+                    <span class="card-num">02</span>
+                    <h3>Document Statistics &amp; Assignment Matrix</h3>
+                    <p>Overview of loaded corpus metrics and detailed assigned document entries.</p>
+                    <div id="statistics-result" class="output">Loading corpus statistics...</div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 2: TOKENIZATION & PREPROCESSING (#page-prep)
+        ==================================================== -->
+        <div class="page-view" id="page-prep">
+            <div class="page-header">
+                <h2>🔤 Tokenization, Stemming &amp; BPE Analysis</h2>
+                <p>Compare tokenization algorithms, text preprocessing pipelines, and subword tokenization.</p>
+            </div>
+
+            <div class="card-grid">
+                <section class="card half" id="tokenization">
+                    <span class="card-num">03</span>
+                    <h3>Tokenization Comparison</h3>
+                    <p>Compare NLTK, spaCy, Custom rules, and Hybrid tokenization on corpus documents.</p>
+                    <label for="tokenization-method">Select Method:</label>
+                    <select id="tokenization-method">
+                        <option value="nltk">NLTK Tokenization</option>
+                        <option value="spacy">spaCy Tokenization</option>
+                        <option value="custom">Custom Tokenization</option>
+                        <option value="hybrid">Hybrid Tokenization</option>
+                    </select>
+                    <button id="tokenization-btn">Run Tokenization</button>
+                    <div id="tokenization-result" class="output"></div>
+                </section>
+
+                <section class="card half" id="preprocessing">
+                    <span class="card-num">04</span>
+                    <h3>Preprocessing Pipeline</h3>
+                    <p>View text cleaning, stop-word removal, Porter/Snowball/Lancaster stemmers, and lemmatization.</p>
+                    <button id="preprocessing-btn">Show Preprocessing Pipeline</button>
+                    <div id="preprocessing-result" class="output"></div>
+                </section>
+
+                <section class="card full" id="bpe">
+                    <span class="card-num">09</span>
+                    <h3>Byte Pair Encoding (BPE) Subword Analysis</h3>
+                    <p>Inspect subword tokenization and vocabulary splits generated via Byte Pair Encoding.</p>
+                    <button id="bpe-btn">Analyze BPE Tokens</button>
+                    <div id="bpe-result" class="output"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 3: LINGUISTICS & NER (#page-ling)
+        ==================================================== -->
+        <div class="page-view" id="page-ling">
+            <div class="page-header">
+                <h2>🏷️ Part-of-Speech Tagging &amp; Named Entity Recognition</h2>
+                <p>Extract grammatical components, domain agricultural terms, and named entities.</p>
+            </div>
+
+            <div class="card-grid">
+                <section class="card half" id="pos-tagging">
+                    <span class="card-num">05</span>
+                    <h3>Standard POS Tagging</h3>
+                    <p>Standard Part-of-Speech tagging using NLTK and spaCy models.</p>
+                    <button id="pos-btn">Show POS Tagging</button>
+                    <div id="pos-result" class="output"></div>
+                </section>
+
+                <section class="card half" id="custom-pos">
+                    <span class="card-num">06</span>
+                    <h3>Custom Agriculture POS Tagging</h3>
+                    <p>Apply domain-specific tagging rules for agricultural crops, pests, and soil terms.</p>
+                    <button id="custom-pos-btn">Show Custom POS Results</button>
+                    <div id="custom-pos-result" class="output"></div>
+                </section>
+
+                <section class="card full" id="ner">
+                    <span class="card-num">07</span>
+                    <h3>Named Entity Recognition (NER)</h3>
+                    <p>Identify entities such as PERSON, ORG, GPE, DATE, MONEY, PRODUCT and agricultural entities.</p>
+                    <button id="ner-btn">Show NER Entities</button>
+                    <div id="ner-result" class="output"></div>
+                </section>
+
+                <section class="card full" id="ngrams">
+                    <span class="card-num">08</span>
+                    <h3>N-Gram Frequency Analysis</h3>
+                    <p>Analyze frequency distributions for unigrams, bigrams, trigrams, 4-grams, and 5-grams.</p>
+                    <label for="ngram-size">Select N-Gram Size:</label>
+                    <select id="ngram-size">
+                        <option value="1">Unigram (1-Gram)</option>
+                        <option value="2" selected>Bigram (2-Gram)</option>
+                        <option value="3">Trigram (3-Gram)</option>
+                        <option value="4">4-Gram</option>
+                        <option value="5">5-Gram</option>
+                    </select>
+                    <button id="ngram-btn">Analyze N-Grams</button>
+                    <div id="ngram-result" class="output"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 4: SEARCH & INDEX EXPLORER (#page-search)
+        ==================================================== -->
+        <div class="page-view" id="page-search">
+            <div class="page-header">
+                <h2>🔍 Inverted Index &amp; Information Retrieval Engine</h2>
+                <p>Lookup index postings, execute keyword/phrase/Boolean queries, and retrieve ranked documents.</p>
+            </div>
+
+            <div class="card-grid">
+                <section class="card full" id="inverted-index">
+                    <span class="card-num">10</span>
+                    <h3>Inverted Index &amp; Postings Explorer</h3>
+                    <p>Search any term in the vocabulary to inspect document frequency (df), collection frequency (cf), and postings.</p>
+                    <div class="form-row">
+                        <input type="text" id="index-term" placeholder="Enter term, e.g. rice, wheat, pest, fertilizer">
+                        <button id="index-btn">Search Index</button>
+                    </div>
+                    <div id="index-result" class="output"></div>
+                </section>
+
+                <section class="card feature full" id="document-retrieval">
+                    <span class="card-num">11-13</span>
+                    <h3>Agricultural Document Retrieval Engine</h3>
+                    <p>Enter search query, select retrieval mode, and execute information retrieval across the active corpus.</p>
+                    
+                    <label for="query">Search Query:</label>
+                    <textarea id="query" rows="3" placeholder="Example: rice cultivation and fertilizer"></textarea>
+
+                    <div style="margin: 12px 0;">
+                        <label for="query-type-select">Query Mode:</label>
+                        <select id="query-type-select" style="max-width: 300px;">
+                            <option value="keyword">Keyword Search</option>
+                            <option value="phrase">Phrase Search</option>
+                            <option value="boolean">Boolean Search (AND / OR / NOT)</option>
+                        </select>
+                    </div>
+
+                    <button id="search-btn">Search Documents ↗</button>
+                    <div id="search-result" class="output">Enter a search query above and click <strong>Search Documents</strong>.</div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 5: EVALUATION & COMPARISON (#page-eval)
+        ==================================================== -->
+        <div class="page-view" id="page-eval">
+            <div class="page-header">
+                <h2>📊 Pipeline Comparison &amp; Performance Metrics</h2>
+                <p>Evaluate retrieval accuracy, compare Pipeline A, B, C, and inspect Precision, Recall, F1, and P@K metrics.</p>
+            </div>
+
+            <div class="card-grid">
+                <section class="card half" id="pipeline-comparison">
+                    <span class="card-num">14</span>
+                    <h3>Pipeline Comparison</h3>
+                    <p>Compare preprocessing and indexing configurations across Pipeline A, Pipeline B, and Pipeline C.</p>
+                    <button id="pipeline-btn">Compare Pipelines</button>
+                    <div id="pipeline-result" class="output"></div>
+                </section>
+
+                <section class="card half" id="performance-evaluation">
+                    <span class="card-num">15</span>
+                    <h3>Performance &amp; Evaluation Metrics</h3>
+                    <p>View Mean Average Precision (MAP), Recall@K, Precision@K, and overall retrieval effectiveness.</p>
+                    <button id="evaluation-btn">Show Evaluation Metrics</button>
+                    <div id="evaluation-result" class="output"></div>
+                </section>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>Agriculture NLP &amp; Information Retrieval System — 2026</p>
+        <p>Active Pipeline: <strong id="footer-final-pipeline">Pipeline B (Hybrid + Lemmatization)</strong></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Query,Normalised (correct),Docs (correct),Normalised (wrong),Docs (wrong)
+pesticides,['pesticid'],18,['pesticides'],0
+cultivation,['cultiv'],22,['cultivation'],0
+irrigation,['irrig'],20,['irrigation'],0
+weeds,['weed'],25,['weeds'],0
+fertilizers,['fertil'],20,['fertilizers'],0
+diseases,['diseas'],25,['diseases'],0
