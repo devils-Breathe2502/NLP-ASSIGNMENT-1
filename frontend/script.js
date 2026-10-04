@@ -373,8 +373,12 @@ async function loadDocuments() {
             resultContainer.classList.add('is-active');
         }
 
-        // Automatically update Document Statistics table and counters
+        // Automatically update Document Statistics table, counters, and document selector options
         await loadStatistics();
+        await loadDocumentInformation();
+        if (LOADED_DOCUMENTS && LOADED_DOCUMENTS.length > 0) {
+            syncSelectedDoc(LOADED_DOCUMENTS.length - 1, null);
+        }
 
     } catch (error) {
 
@@ -847,9 +851,11 @@ async function runTokenization() {
                 ? methodElement.value
                 : "hybrid";
 
+        const docIndex = getSelectedDocIndex("tokenization-doc");
+
         const data =
             await fetchAPI(
-                `/api/tokenization?method=${encodeURIComponent(method)}&doc=0`
+                `/api/tokenization?method=${encodeURIComponent(method)}&doc=${docIndex}`
             );
 
         renderTokenizationResult(data);
@@ -872,9 +878,11 @@ async function runPreprocessing() {
 
     try {
 
+        const docIndex = getSelectedDocIndex("preprocessing-doc");
+
         const data =
             await fetchAPI(
-                "/api/preprocessing?doc=0"
+                `/api/preprocessing?doc=${docIndex}`
             );
 
         renderPreprocessingResult(data);
@@ -897,9 +905,11 @@ async function runPOSTagging() {
 
     try {
 
+        const docIndex = getSelectedDocIndex("pos-doc");
+
         const data =
             await fetchAPI(
-                "/api/pos/detail?method=nltk&doc=0"
+                `/api/pos/detail?method=nltk&doc=${docIndex}`
             );
 
         renderPOSResult(data);
@@ -922,9 +932,11 @@ async function runCustomPOS() {
 
     try {
 
+        const docIndex = getSelectedDocIndex("custom-pos-doc");
+
         const data =
             await fetchAPI(
-                "/api/custom-pos?doc=0"
+                `/api/custom-pos?doc=${docIndex}`
             );
 
         renderCustomPOSResult(data);
@@ -947,9 +959,11 @@ async function runNER() {
 
     try {
 
+        const docIndex = getSelectedDocIndex("ner-doc");
+
         const data =
             await fetchAPI(
-                "/api/ner?doc=0"
+                `/api/ner?doc=${docIndex}`
             );
 
         renderNERResult(data);
@@ -982,9 +996,11 @@ async function runNGrams() {
                 ? nElement.value
                 : 2;
 
+        const docIndex = getSelectedDocIndex("ngram-doc");
+
         const data =
             await fetchAPI(
-                `/api/ngrams?n=${encodeURIComponent(n)}`
+                `/api/ngrams?n=${encodeURIComponent(n)}&doc=${docIndex}`
             );
 
         renderNGramsResult(data);
@@ -1007,9 +1023,11 @@ async function runBPE() {
 
     try {
 
+        const docIndex = getSelectedDocIndex("bpe-doc");
+
         const data =
             await fetchAPI(
-                "/api/bpe?doc=0"
+                `/api/bpe?doc=${docIndex}`
             );
 
         renderBPEResult(data);
@@ -1193,29 +1211,105 @@ async function loadEvaluation() {
 
 // ============================================================
 // DOCUMENT INFORMATION
-// ============================================================
+let ACTIVE_DOC_INDEX = 0;
+let LOADED_DOCUMENTS = [];
 
 async function loadDocumentInformation() {
-
     try {
-
-        const data =
-            await fetchAPI(
-                "/api/documents"
-            );
-
-        console.log(
-            "Documents:",
-            data
-        );
-
+        const data = await fetchAPI("/api/documents");
+        if (data && data.documents) {
+            LOADED_DOCUMENTS = data.documents;
+            populateAllDocSelectors(LOADED_DOCUMENTS);
+        }
     } catch (error) {
-
-        console.error(
-            "Could not load documents:",
-            error
-        );
+        console.error("Could not load document information:", error);
     }
+}
+
+function populateAllDocSelectors(docs) {
+    const selectorIds = [
+        "global-doc-select-p2",
+        "global-doc-select-p3",
+        "tokenization-doc",
+        "preprocessing-doc",
+        "bpe-doc",
+        "pos-doc",
+        "custom-pos-doc",
+        "ner-doc",
+        "ngram-doc"
+    ];
+
+    selectorIds.forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+
+        const currentVal = sel.value;
+        sel.innerHTML = "";
+
+        if (id === "ngram-doc") {
+            const optAll = document.createElement("option");
+            optAll.value = "all";
+            optAll.textContent = "All Corpus Documents (Global Corpus N-Grams)";
+            sel.appendChild(optAll);
+        }
+
+        docs.forEach((doc, idx) => {
+            const opt = document.createElement("option");
+            opt.value = idx;
+            const docIdStr = doc.doc_id ? `#${doc.doc_id}` : `#${idx + 1}`;
+            const fileNameStr = doc.file_name || `Doc_${idx + 1}`;
+            const fmtStr = doc.format ? ` [${doc.format}]` : "";
+            opt.textContent = `${docIdStr}: ${fileNameStr}${fmtStr}`;
+            sel.appendChild(opt);
+        });
+
+        if (id === "ngram-doc" && currentVal === "all") {
+            sel.value = "all";
+        } else if (ACTIVE_DOC_INDEX < docs.length) {
+            sel.value = ACTIVE_DOC_INDEX;
+        } else if (docs.length > 0) {
+            sel.value = 0;
+        }
+    });
+}
+
+function syncSelectedDoc(newVal, sourceId) {
+    if (newVal !== "all" && newVal !== null && newVal !== undefined) {
+        ACTIVE_DOC_INDEX = parseInt(newVal, 10) || 0;
+    }
+
+    const selectorIds = [
+        "global-doc-select-p2",
+        "global-doc-select-p3",
+        "tokenization-doc",
+        "preprocessing-doc",
+        "bpe-doc",
+        "pos-doc",
+        "custom-pos-doc",
+        "ner-doc"
+    ];
+
+    selectorIds.forEach(id => {
+        if (id !== sourceId) {
+            const sel = document.getElementById(id);
+            if (sel) {
+                sel.value = ACTIVE_DOC_INDEX;
+            }
+        }
+    });
+
+    const ngramSel = document.getElementById("ngram-doc");
+    if (ngramSel && sourceId !== "ngram-doc" && ngramSel.value !== "all") {
+        ngramSel.value = ACTIVE_DOC_INDEX;
+    }
+}
+
+function getSelectedDocIndex(selectId) {
+    const sel = document.getElementById(selectId);
+    if (sel && sel.value !== undefined && sel.value !== "") {
+        return sel.value;
+    }
+    return ACTIVE_DOC_INDEX;
 }
 
 
@@ -1539,6 +1633,30 @@ document.addEventListener(
             );
         }
 
+
+        // ----------------------------------------------------
+        // DOCUMENT SELECTOR CHANGE HANDLERS
+        // ----------------------------------------------------
+        const selectorIds = [
+            "global-doc-select-p2",
+            "global-doc-select-p3",
+            "tokenization-doc",
+            "preprocessing-doc",
+            "bpe-doc",
+            "pos-doc",
+            "custom-pos-doc",
+            "ner-doc",
+            "ngram-doc"
+        ];
+
+        selectorIds.forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                sel.addEventListener("change", function () {
+                    syncSelectedDoc(this.value, id);
+                });
+            }
+        });
 
         // ----------------------------------------------------
         // LOAD DOCUMENT INFORMATION

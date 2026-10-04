@@ -396,6 +396,53 @@ textarea {
     resize: vertical;
 }
 
+/* Document Selector Bar & Group */
+.doc-selector-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+    padding: 12px 18px;
+    background: #f0fdf4;
+    border: 1px solid rgba(81, 200, 120, 0.4);
+    border-radius: 14px;
+}
+
+.doc-selector-bar label {
+    margin: 0;
+    white-space: nowrap;
+    color: var(--forest);
+    font-size: 0.9rem;
+}
+
+.global-doc-select {
+    flex: 1;
+    font-weight: 600;
+    border-color: rgba(81, 200, 120, 0.5);
+    background: #ffffff;
+}
+
+.selector-group {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.sel-field {
+    flex: 1;
+}
+
+.sel-field label {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+}
+
+.card-doc-select {
+    font-weight: 600;
+    background: #fafdfb;
+}
+
 .form-row {
     display: flex;
     gap: 12px;

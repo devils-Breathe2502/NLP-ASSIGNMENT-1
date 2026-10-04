@@ -693,10 +693,16 @@ def ngrams():
         )
     )
 
+    doc_index = request.args.get(
+        "doc",
+        None
+    )
+
     try:
 
         result = nlp_engine.get_ngrams(
-            n
+            n,
+            doc_index=doc_index
         )
 
         return jsonify(

@@ -362,7 +362,15 @@ def load_json_file(path):
         return json.load(f)
 
 
+INVERTED_INDEX_CACHE = None
+
+
 def get_inverted_index():
+
+    global INVERTED_INDEX_CACHE
+
+    if INVERTED_INDEX_CACHE is not None:
+        return INVERTED_INDEX_CACHE
 
     path = os.path.join(
         RESULTS_DIR,
@@ -372,14 +380,17 @@ def get_inverted_index():
     data = load_json_file(path)
 
     if data is None:
-        return None
+        INVERTED_INDEX_CACHE = {}
+        return INVERTED_INDEX_CACHE
 
     # The JSON file wraps the index inside an "index" key
     # alongside metadata like "pipeline", "description", etc.
     if isinstance(data, dict) and "index" in data:
-        return data["index"]
+        INVERTED_INDEX_CACHE = data["index"]
+    else:
+        INVERTED_INDEX_CACHE = data
 
-    return data
+    return INVERTED_INDEX_CACHE
 
 
 def get_positional_index():
@@ -402,7 +413,7 @@ def get_positional_index():
 
 
 # ============================================================
-# SEARCH PLACEHOLDER
+# SEARCH ENGINE
 # ============================================================
 
 def search_documents(query, pipeline="B"):
@@ -422,31 +433,36 @@ def search_documents(query, pipeline="B"):
 
     index_data = get_inverted_index()
 
-    if index_data is None:
-        return {
-            "query": query,
-            "pipeline": pipeline,
-            "results": [],
-            "message": "Inverted index not found."
-        }
-
     matched_documents = set()
 
-    for term in query_terms:
+    if index_data:
+        for term in query_terms:
+            entry = index_data.get(term, None)
+            if entry is None:
+                continue
 
-        entry = index_data.get(
-            term,
-            None
-        )
+            # Each entry is {"df": ..., "cf": ..., "postings": [...]}
+            if isinstance(entry, dict):
+                postings = entry.get("postings", [])
+            elif isinstance(entry, list):
+                postings = entry
+            else:
+                continue
 
-        if entry is None:
-            continue
+            for doc_id in postings:
+                matched_documents.add(str(doc_id))
 
-        # Each entry is {"df": ..., "cf": ..., "postings": [...]}
-        if isinstance(entry, dict):
-            postings = entry.get("postings", [])
-        elif isinstance(entry, list):
-            postings = entry
+    # Supplemental full-text fallback search across documents DataFrame
+    # Ensures newly uploaded documents or terms are always found
+    for idx, row in documents.iterrows():
+        doc_id = row.get("doc_id", idx + 1)
+        index_id = f"D{int(doc_id):02d}" if str(doc_id).isdigit() else str(doc_id)
+        
+        full_text = (str(row.get("text", "")) + " " + str(row.get("clean_text", ""))).lower()
+        
+        if any(q_term in full_text for q_term in query_terms):
+            matched_documents.add(str(index_id))
+            matched_documents.add(str(doc_id))
         else:
             continue
 
@@ -722,15 +738,12 @@ def get_ner(doc_index=0):
 # 8. N-GRAM ANALYSIS
 # ============================================================
 
-def get_ngrams(n=2):
+def get_ngrams(n=2, doc_index=None):
 
     if n < 1 or n > 5:
         raise ValueError(
             "N must be between 1 and 5."
         )
-
-    # Use the processed tokens already created
-    # in the notebook.
 
     if "tokens_no_stopwords" not in documents.columns:
         raise ValueError(
@@ -739,7 +752,18 @@ def get_ngrams(n=2):
 
     all_ngrams = []
 
-    for tokens in documents["tokens_no_stopwords"]:
+    if doc_index is not None and str(doc_index).strip().lower() not in ["all", "", "none"]:
+        try:
+            doc_idx = int(doc_index)
+            if doc_idx < 0 or doc_idx >= len(documents):
+                raise IndexError(f"Invalid document index: {doc_index}")
+            token_sources = [documents.iloc[doc_idx]["tokens_no_stopwords"]]
+        except (ValueError, TypeError):
+            token_sources = documents["tokens_no_stopwords"]
+    else:
+        token_sources = documents["tokens_no_stopwords"]
+
+    for tokens in token_sources:
 
         # Remove punctuation
         clean_tokens = [
@@ -773,6 +797,7 @@ def get_ngrams(n=2):
 
     return {
         "n": n,
+        "document_index": doc_index,
         "total_count": len(all_ngrams),
         "unique_count": len(frequencies),
         "top_10": top_10

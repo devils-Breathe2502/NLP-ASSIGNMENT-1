@@ -100,7 +100,11 @@
         <div class="page-view" id="page-prep">
             <div class="page-header">
                 <h2>🔤 Tokenization, Stemming &amp; BPE Analysis</h2>
-                <p>Compare tokenization algorithms, text preprocessing pipelines, and subword tokenization.</p>
+                <p>Compare tokenization algorithms, text preprocessing pipelines, and subword tokenization across any selected document.</p>
+                <div class="doc-selector-bar">
+                    <label for="global-doc-select-p2"><strong>📄 Active Document for Analysis:</strong></label>
+                    <select id="global-doc-select-p2" class="global-doc-select"></select>
+                </div>
             </div>
 
             <div class="card-grid">
@@ -108,14 +112,22 @@
                     <span class="card-num">03</span>
                     <h3>Tokenization Comparison</h3>
                     <p>Compare NLTK, spaCy, Custom rules, and Hybrid tokenization on corpus documents.</p>
-                    <label for="tokenization-method">Select Method:</label>
-                    <select id="tokenization-method">
-                        <option value="nltk">NLTK Tokenization</option>
-                        <option value="spacy">spaCy Tokenization</option>
-                        <option value="custom">Custom Tokenization</option>
-                        <option value="hybrid">Hybrid Tokenization</option>
-                    </select>
-                    <button id="tokenization-btn">Run Tokenization</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="tokenization-doc">Target Document:</label>
+                            <select id="tokenization-doc" class="card-doc-select"></select>
+                        </div>
+                        <div class="sel-field">
+                            <label for="tokenization-method">Tokenization Method:</label>
+                            <select id="tokenization-method">
+                                <option value="nltk">NLTK Tokenization</option>
+                                <option value="spacy">spaCy Tokenization</option>
+                                <option value="custom">Custom Tokenization</option>
+                                <option value="hybrid" selected>Hybrid Tokenization</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="tokenization-btn">Run Tokenization ↗</button>
                     <div id="tokenization-result" class="output"></div>
                 </section>
 
@@ -123,7 +135,13 @@
                     <span class="card-num">04</span>
                     <h3>Preprocessing Pipeline</h3>
                     <p>View text cleaning, stop-word removal, Porter/Snowball/Lancaster stemmers, and lemmatization.</p>
-                    <button id="preprocessing-btn">Show Preprocessing Pipeline</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="preprocessing-doc">Target Document:</label>
+                            <select id="preprocessing-doc" class="card-doc-select"></select>
+                        </div>
+                    </div>
+                    <button id="preprocessing-btn">Show Preprocessing Pipeline ↗</button>
                     <div id="preprocessing-result" class="output"></div>
                 </section>
 
@@ -131,7 +149,13 @@
                     <span class="card-num">09</span>
                     <h3>Byte Pair Encoding (BPE) Subword Analysis</h3>
                     <p>Inspect subword tokenization and vocabulary splits generated via Byte Pair Encoding.</p>
-                    <button id="bpe-btn">Analyze BPE Tokens</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="bpe-doc">Target Document:</label>
+                            <select id="bpe-doc" class="card-doc-select"></select>
+                        </div>
+                    </div>
+                    <button id="bpe-btn">Analyze BPE Tokens ↗</button>
                     <div id="bpe-result" class="output"></div>
                 </section>
             </div>
@@ -143,7 +167,11 @@
         <div class="page-view" id="page-ling">
             <div class="page-header">
                 <h2>🏷️ Part-of-Speech Tagging &amp; Named Entity Recognition</h2>
-                <p>Extract grammatical components, domain agricultural terms, and named entities.</p>
+                <p>Extract grammatical components, domain agricultural terms, and named entities across any selected document.</p>
+                <div class="doc-selector-bar">
+                    <label for="global-doc-select-p3"><strong>📄 Active Document for Analysis:</strong></label>
+                    <select id="global-doc-select-p3" class="global-doc-select"></select>
+                </div>
             </div>
 
             <div class="card-grid">
@@ -151,7 +179,13 @@
                     <span class="card-num">05</span>
                     <h3>Standard POS Tagging</h3>
                     <p>Standard Part-of-Speech tagging using NLTK and spaCy models.</p>
-                    <button id="pos-btn">Show POS Tagging</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="pos-doc">Target Document:</label>
+                            <select id="pos-doc" class="card-doc-select"></select>
+                        </div>
+                    </div>
+                    <button id="pos-btn">Show POS Tagging ↗</button>
                     <div id="pos-result" class="output"></div>
                 </section>
 
@@ -159,7 +193,13 @@
                     <span class="card-num">06</span>
                     <h3>Custom Agriculture POS Tagging</h3>
                     <p>Apply domain-specific tagging rules for agricultural crops, pests, and soil terms.</p>
-                    <button id="custom-pos-btn">Show Custom POS Results</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="custom-pos-doc">Target Document:</label>
+                            <select id="custom-pos-doc" class="card-doc-select"></select>
+                        </div>
+                    </div>
+                    <button id="custom-pos-btn">Show Custom POS Results ↗</button>
                     <div id="custom-pos-result" class="output"></div>
                 </section>
 
@@ -167,7 +207,13 @@
                     <span class="card-num">07</span>
                     <h3>Named Entity Recognition (NER)</h3>
                     <p>Identify entities such as PERSON, ORG, GPE, DATE, MONEY, PRODUCT and agricultural entities.</p>
-                    <button id="ner-btn">Show NER Entities</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="ner-doc">Target Document:</label>
+                            <select id="ner-doc" class="card-doc-select"></select>
+                        </div>
+                    </div>
+                    <button id="ner-btn">Show NER Entities ↗</button>
                     <div id="ner-result" class="output"></div>
                 </section>
 
@@ -175,15 +221,25 @@
                     <span class="card-num">08</span>
                     <h3>N-Gram Frequency Analysis</h3>
                     <p>Analyze frequency distributions for unigrams, bigrams, trigrams, 4-grams, and 5-grams.</p>
-                    <label for="ngram-size">Select N-Gram Size:</label>
-                    <select id="ngram-size">
-                        <option value="1">Unigram (1-Gram)</option>
-                        <option value="2" selected>Bigram (2-Gram)</option>
-                        <option value="3">Trigram (3-Gram)</option>
-                        <option value="4">4-Gram</option>
-                        <option value="5">5-Gram</option>
-                    </select>
-                    <button id="ngram-btn">Analyze N-Grams</button>
+                    <div class="selector-group">
+                        <div class="sel-field">
+                            <label for="ngram-doc">Target Document:</label>
+                            <select id="ngram-doc" class="card-doc-select">
+                                <option value="all">All Corpus Documents (Global Corpus N-Grams)</option>
+                            </select>
+                        </div>
+                        <div class="sel-field">
+                            <label for="ngram-size">N-Gram Size:</label>
+                            <select id="ngram-size">
+                                <option value="1">Unigram (1-Gram)</option>
+                                <option value="2" selected>Bigram (2-Gram)</option>
+                                <option value="3">Trigram (3-Gram)</option>
+                                <option value="4">4-Gram</option>
+                                <option value="5">5-Gram</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="ngram-btn">Analyze N-Grams ↗</button>
                     <div id="ngram-result" class="output"></div>
                 </section>
             </div>
