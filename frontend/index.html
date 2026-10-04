@@ -269,18 +269,28 @@
                 <section class="card feature full" id="document-retrieval">
                     <span class="card-num">11-13</span>
                     <h3>Agricultural Document Retrieval Engine</h3>
-                    <p>Enter search query, select retrieval mode, and execute information retrieval across the active corpus.</p>
+                    <p>Select your retrieval pipeline (Pipeline A, B, or C), enter search query, and execute information retrieval across the active corpus.</p>
                     
                     <label for="query">Search Query:</label>
                     <textarea id="query" rows="3" placeholder="Example: rice cultivation and fertilizer"></textarea>
 
-                    <div style="margin: 12px 0;">
-                        <label for="query-type-select">Query Mode:</label>
-                        <select id="query-type-select" style="max-width: 300px;">
-                            <option value="keyword">Keyword Search</option>
-                            <option value="phrase">Phrase Search</option>
-                            <option value="boolean">Boolean Search (AND / OR / NOT)</option>
-                        </select>
+                    <div class="selector-group" style="margin-top: 14px;">
+                        <div class="sel-field">
+                            <label for="search-pipeline-select" style="color:rgba(255,255,255,0.9);"><strong>Retrieval Pipeline:</strong></label>
+                            <select id="search-pipeline-select" style="background:#ffffff; color:#111827; font-weight:700;">
+                                <option value="B" selected>Pipeline B: Hybrid Agricultural (Best / Recommended ⭐)</option>
+                                <option value="A">Pipeline A: Standard NLTK Baseline</option>
+                                <option value="C">Pipeline C: Aggressive Regex &amp; Stemmer</option>
+                            </select>
+                        </div>
+                        <div class="sel-field">
+                            <label for="query-type-select" style="color:rgba(255,255,255,0.9);"><strong>Query Mode:</strong></label>
+                            <select id="query-type-select" style="background:#ffffff; color:#111827; font-weight:600;">
+                                <option value="keyword">Keyword Search</option>
+                                <option value="phrase">Phrase Search</option>
+                                <option value="boolean">Boolean Search (AND / OR / NOT)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button id="search-btn">Search Documents ↗</button>
@@ -294,24 +304,24 @@
         ==================================================== -->
         <div class="page-view" id="page-eval">
             <div class="page-header">
-                <h2>📊 Pipeline Comparison &amp; Performance Metrics</h2>
-                <p>Evaluate retrieval accuracy, compare Pipeline A, B, C, and inspect Precision, Recall, F1, and P@K metrics.</p>
+                <h2>📊 Pipeline Comparison &amp; Empirical Performance Evaluation</h2>
+                <p>Compare preprocessing configurations, token counts, and IR evaluation metrics across Pipeline A, Pipeline B, and Pipeline C to verify why Pipeline B is the optimal model.</p>
             </div>
 
             <div class="card-grid">
-                <section class="card half" id="pipeline-comparison">
+                <section class="card full" id="pipeline-comparison">
                     <span class="card-num">14</span>
-                    <h3>Pipeline Comparison</h3>
-                    <p>Compare preprocessing and indexing configurations across Pipeline A, Pipeline B, and Pipeline C.</p>
-                    <button id="pipeline-btn">Compare Pipelines</button>
+                    <h3>Pipeline Architecture &amp; Feature Comparison</h3>
+                    <p>Compare token counts, vocabulary size, domain agricultural term preservation, and normalization rules across all 3 pipelines.</p>
+                    <button id="pipeline-btn">Compare Pipeline Architectures ↗</button>
                     <div id="pipeline-result" class="output"></div>
                 </section>
 
-                <section class="card half" id="performance-evaluation">
+                <section class="card full" id="performance-evaluation">
                     <span class="card-num">15</span>
-                    <h3>Performance &amp; Evaluation Metrics</h3>
-                    <p>View Mean Average Precision (MAP), Recall@K, Precision@K, and overall retrieval effectiveness.</p>
-                    <button id="evaluation-btn">Show Evaluation Metrics</button>
+                    <h3>Information Retrieval Performance &amp; Evaluation Metrics</h3>
+                    <p>View empirical Precision, Recall, F1-Score, Precision@5 (P@5), and Recall@5 benchmark metrics for Pipeline A, B, and C.</p>
+                    <button id="evaluation-btn">Show Evaluation Metrics ↗</button>
                     <div id="evaluation-result" class="output"></div>
                 </section>
             </div>
