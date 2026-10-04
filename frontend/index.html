@@ -258,9 +258,14 @@
                 <section class="card full" id="inverted-index">
                     <span class="card-num">10</span>
                     <h3>Inverted Index &amp; Postings Explorer</h3>
-                    <p>Search any term in the vocabulary to inspect document frequency (df), collection frequency (cf), and postings.</p>
-                    <div class="form-row">
-                        <input type="text" id="index-term" placeholder="Enter term, e.g. rice, wheat, pest, fertilizer">
+                    <p>Search any term in the vocabulary to inspect document frequency (df), collection frequency (cf), and postings across pipelines.</p>
+                    <div class="form-row" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="index-term" placeholder="Enter term, e.g. rice, wheat, pest, fertilizer, under" style="flex: 1; min-width: 220px;">
+                        <select id="index-pipeline-select" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #d1d5db; background: #ffffff; color: #111827; font-weight: 700; font-size: 0.95rem;">
+                            <option value="B" selected>Pipeline B (Recommended ⭐)</option>
+                            <option value="A">Pipeline A (Standard Baseline)</option>
+                            <option value="C">Pipeline C (Aggressive Stemmer)</option>
+                        </select>
                         <button id="index-btn">Search Index</button>
                     </div>
                     <div id="index-result" class="output"></div>

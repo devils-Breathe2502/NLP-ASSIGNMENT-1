@@ -664,25 +664,40 @@ function renderInvertedIndexResult(data) {
     if (!el) return;
 
     const term = data.term || "";
+    const pipeline = data.pipeline || "B";
     const docs = data.documents || [];
     const df = data.df || docs.length;
     const cf = data.cf || docs.length;
+
+    let pipeBadgeHtml = '';
+    if (pipeline === "B") {
+        pipeBadgeHtml = `<span class="v-badge primary" style="background:var(--lime); color:var(--forest); font-weight:700;">Pipeline B (Hybrid ⭐)</span>`;
+    } else if (pipeline === "A") {
+        pipeBadgeHtml = `<span class="v-badge" style="background:#fef08a; color:#854d0e; font-weight:700;">Pipeline A (Baseline)</span>`;
+    } else {
+        pipeBadgeHtml = `<span class="v-badge" style="background:#ffedd5; color:#9a3412; font-weight:700;">Pipeline C (Aggressive)</span>`;
+    }
 
     let html = `
     <div class="visual-card">
         <div class="visual-header">
             <span class="v-badge">Term: <strong style="color:var(--forest);">${term}</strong></span>
+            ${pipeBadgeHtml}
             <span class="v-badge">Doc Frequency (df): <strong>${df} docs</strong></span>
             <span class="v-badge primary">Collection Frequency (cf): <strong>${cf} occurrences</strong></span>
         </div>
 
-        <p style="font-size:12px; color:var(--ink-soft); margin: 10px 0 6px;">Postings List (${docs.length} document IDs):</p>
+        <p style="font-size:12px; color:var(--ink-soft); margin: 10px 0 6px;">Postings List (${docs.length} document IDs under Pipeline ${pipeline}):</p>
         <div class="postings-wrapper">
     `;
 
-    docs.forEach(docId => {
-        html += `<span class="postings-badge">${docId}</span>`;
-    });
+    if (!docs.length) {
+        html += `<p style="font-size:12.5px; color:var(--ink-soft); padding:8px 0;">No postings found for term "<strong>${term}</strong>" under Pipeline ${pipeline}.</p>`;
+    } else {
+        docs.forEach(docId => {
+            html += `<span class="postings-badge">${docId}</span>`;
+        });
+    }
 
     html += `
         </div>
@@ -1178,6 +1193,9 @@ async function lookupIndexTerm() {
                 ? termElement.value.trim()
                 : "";
 
+        const pipeElement = document.getElementById("index-pipeline-select");
+        const pipeline = pipeElement ? pipeElement.value : "B";
+
         if (!term) {
 
             displayMessage(
@@ -1190,7 +1208,7 @@ async function lookupIndexTerm() {
 
         const data =
             await fetchAPI(
-                `/api/index/term?term=${encodeURIComponent(term)}`
+                `/api/index/term?term=${encodeURIComponent(term)}&pipeline=${encodeURIComponent(pipeline)}`
             );
 
         renderInvertedIndexResult(data);
@@ -1698,6 +1716,26 @@ document.addEventListener(
                 "click",
                 lookupIndexTerm
             );
+        }
+
+        const indexPipelineSelect = document.getElementById("index-pipeline-select");
+        if (indexPipelineSelect) {
+            indexPipelineSelect.addEventListener("change", function () {
+                const termEl = document.getElementById("index-term");
+                if (termEl && termEl.value.trim()) {
+                    lookupIndexTerm();
+                }
+            });
+        }
+
+        const indexTermInput = document.getElementById("index-term");
+        if (indexTermInput) {
+            indexTermInput.addEventListener("keypress", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    lookupIndexTerm();
+                }
+            });
         }
 
 

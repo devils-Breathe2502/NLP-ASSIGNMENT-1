@@ -491,6 +491,84 @@ def eval_doc_match_term(term, row, pipeline):
         return False
 
 
+def lookup_index_term(term, pipeline="B"):
+    """
+    Lookup a term in the inverted index for the specified pipeline (A, B, or C).
+    Returns term statistics (df, cf) and list of document IDs (postings).
+    """
+    term = str(term).strip().lower()
+    pipeline = str(pipeline).strip().upper()
+    if pipeline not in ["A", "B", "C"]:
+        pipeline = "B"
+
+    if not term:
+        return {
+            "term": term,
+            "pipeline": pipeline,
+            "df": 0,
+            "cf": 0,
+            "documents": [],
+            "count": 0
+        }
+
+    postings = []
+    cf = 0
+
+    if pipeline == "B":
+        inv_index = get_inverted_index()
+        if isinstance(inv_index, dict) and term in inv_index:
+            entry = inv_index[term]
+            if isinstance(entry, dict):
+                postings = list(entry.get("postings", []))
+                cf = entry.get("cf", len(postings))
+            elif isinstance(entry, list):
+                postings = list(entry)
+                cf = len(postings)
+
+    formatted_postings = []
+    seen = set()
+    for p in postings:
+        p_str = f"D{int(p):02d}" if str(p).isdigit() else str(p)
+        if p_str not in seen:
+            seen.add(p_str)
+            formatted_postings.append(p_str)
+
+    global documents
+    if documents is not None and not documents.empty:
+        for idx, row in documents.iterrows():
+            doc_id = row.get("doc_id", idx + 1)
+            index_id = f"D{int(doc_id):02d}" if str(doc_id).isdigit() else str(doc_id)
+
+            if eval_doc_match_term(term, row, pipeline):
+                text_str = str(row.get("text", "")).lower()
+                term_freq = len(re.findall(r'\b' + re.escape(term) + r'\b', text_str)) or 1
+
+                if index_id not in seen:
+                    seen.add(index_id)
+                    formatted_postings.append(index_id)
+                    cf += term_freq
+                elif pipeline != "B":
+                    cf += term_freq
+
+    def sort_key(x):
+        s = str(x)
+        if s.startswith("D") and s[1:].isdigit():
+            return (0, int(s[1:]))
+        return (1, s)
+
+    formatted_postings.sort(key=sort_key)
+
+    return {
+        "term": term,
+        "pipeline": pipeline,
+        "df": len(formatted_postings),
+        "cf": max(cf, len(formatted_postings)),
+        "documents": formatted_postings,
+        "count": len(formatted_postings)
+    }
+
+
+
 def search_documents(query, pipeline="B"):
 
     if not query or not str(query).strip():

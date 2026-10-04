@@ -413,56 +413,22 @@ def index_term():
         ""
     ).strip().lower()
 
-    if not term:
+    pipeline = request.args.get(
+        "pipeline",
+        "B"
+    ).strip().upper()
 
+    if not term:
         return jsonify({
             "error": "Please provide a term."
         }), 400
 
-    index_data = (
-        nlp_engine.get_inverted_index()
-    )
-
-    if index_data is None:
-
-        return jsonify({
-            "error": "Inverted index not found."
-        }), 404
-
-    result = index_data.get(
-        term,
-        None
-    )
-
-    if result is None:
-        return jsonify(
-            make_json_safe({
-                "term": term,
-                "documents": [],
-                "count": 0
-            })
-        )
-
-    # Each entry is {"df": ..., "cf": ..., "postings": [...]}
-    if isinstance(result, dict):
-        postings = result.get("postings", [])
-        return jsonify(
-            make_json_safe({
-                "term": term,
-                "df": result.get("df", 0),
-                "cf": result.get("cf", 0),
-                "documents": postings,
-                "count": len(postings)
-            })
-        )
+    result = nlp_engine.lookup_index_term(term, pipeline)
 
     return jsonify(
-        make_json_safe({
-            "term": term,
-            "documents": result,
-            "count": len(result)
-        })
+        make_json_safe(result)
     )
+
 
 
 # ============================================================
