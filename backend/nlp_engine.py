@@ -769,40 +769,90 @@ def get_tokenization(method="hybrid", doc_index=0):
 # ============================================================
 
 def get_preprocessing(doc_index=0):
-
     if doc_index < 0 or doc_index >= len(documents):
         raise IndexError("Invalid document index.")
 
     row = documents.iloc[doc_index]
+    doc_id = row.get("doc_id", doc_index + 1)
+    index_id = f"D{int(doc_id):02d}" if str(doc_id).isdigit() else str(doc_id)
 
-    result = {
+    raw_text = str(row.get("text", ""))
+    clean_text = str(row.get("clean_text", ""))
+
+    raw_tokens = [t.lower().strip(".,!?;:()[]\"'") for t in raw_text.split() if t.strip()]
+    stopwords_removed = [t for t in raw_tokens if t in NLTK_ENGLISH_STOPWORDS]
+
+    tokens_no_sw = row.get("tokens_no_stopwords", [])
+    if isinstance(tokens_no_sw, list) and tokens_no_sw:
+        clean_tokens = [str(t) for t in tokens_no_sw]
+    else:
+        clean_tokens = [t for t in raw_tokens if t not in NLTK_ENGLISH_STOPWORDS and len(t) > 2]
+
+    raw_vocab = set(raw_tokens)
+    clean_vocab = set(clean_tokens)
+
+    raw_token_count = len(raw_tokens)
+    clean_token_count = len(clean_tokens)
+    stopwords_count = len(stopwords_removed)
+    raw_vocab_count = len(raw_vocab)
+    clean_vocab_count = len(clean_vocab)
+
+    vocab_reduction_pct = round(((raw_vocab_count - clean_vocab_count) / max(raw_vocab_count, 1)) * 100, 2) if raw_vocab_count > 0 else 0.0
+
+    sw_counts = Counter(stopwords_removed).most_common(12)
+    top_stopwords = [{"word": word, "count": count} for word, count in sw_counts]
+
+    # Corpus-level Aggregates across all active documents
+    all_raw_tokens = []
+    all_clean_tokens = []
+    all_sw_removed = []
+    for idx, r in documents.iterrows():
+        t_raw = [t.lower().strip(".,!?;:()[]\"'") for t in str(r.get("text", "")).split() if t.strip()]
+        all_raw_tokens.extend(t_raw)
+        all_sw_removed.extend([t for t in t_raw if t in NLTK_ENGLISH_STOPWORDS])
+        c_toks = r.get("tokens_no_stopwords", [])
+        if isinstance(c_toks, list) and c_toks:
+            all_clean_tokens.extend([str(t) for t in c_toks])
+        else:
+            all_clean_tokens.extend([t for t in t_raw if t not in NLTK_ENGLISH_STOPWORDS and len(t) > 2])
+
+    corpus_raw_vocab = set(t for t in all_raw_tokens if t and not t.isdigit())
+    corpus_clean_vocab = set(all_clean_tokens)
+    raw_v_size = len(corpus_raw_vocab)
+    clean_v_size = len(corpus_clean_vocab)
+    corpus_vocab_reduction_pct = round(((raw_v_size - clean_v_size) / max(raw_v_size, 1)) * 100, 2) if raw_v_size > clean_v_size else round(((clean_v_size - raw_v_size) / max(raw_v_size, 1)) * 100, 2)
+    corpus_top_sw = [{"word": word, "count": count} for word, count in Counter(all_sw_removed).most_common(12)]
+
+    return {
         "document_index": doc_index,
-        "doc_id": row["doc_id"]
+        "doc_id": doc_id,
+        "index_id": index_id,
+        "text": raw_text,
+        "clean_text": clean_text,
+        "raw_token_count": raw_token_count,
+        "clean_token_count": clean_token_count,
+        "stopwords_count": stopwords_count,
+        "raw_vocab_count": raw_vocab_count,
+        "clean_vocab_count": clean_vocab_count,
+        "vocab_reduction_pct": vocab_reduction_pct,
+        "top_stopwords": top_stopwords,
+        "tokens_no_stopwords": clean_tokens[:200],
+        "porter_tokens": [str(t) for t in row.get("porter_tokens", [])][:20],
+        "snowball_tokens": [str(t) for t in row.get("snowball_tokens", [])][:20],
+        "lancaster_tokens": [str(t) for t in row.get("lancaster_tokens", [])][:20],
+        "nltk_lemmas": [str(t) for t in row.get("nltk_lemmas", [])][:20],
+        "spacy_lemmas": [str(t) for t in row.get("spacy_lemmas", [])][:20],
+        "hybrid_tokens": [str(t) for t in row.get("hybrid_tokens", [])][:20],
+        "corpus_stats": {
+            "corpus_raw_tokens": len(all_raw_tokens),
+            "corpus_clean_tokens": len(all_clean_tokens),
+            "corpus_stopwords_removed": len(all_sw_removed),
+            "corpus_raw_vocab": len(corpus_raw_vocab),
+            "corpus_clean_vocab": len(corpus_clean_vocab),
+            "corpus_vocab_reduction_pct": corpus_vocab_reduction_pct,
+            "corpus_top_stopwords": corpus_top_sw
+        }
     }
-
-    columns = [
-        "text",
-        "clean_text",
-        "tokens_no_stopwords",
-        "porter_tokens",
-        "snowball_tokens",
-        "lancaster_tokens",
-        "nltk_lemmas",
-        "spacy_lemmas"
-    ]
-
-    for column in columns:
-
-        if column in documents.columns:
-
-            value = row[column]
-
-            if isinstance(value, list):
-                result[column] = value[:200]
-            else:
-                result[column] = value
-
-    return result
 
 
 # ============================================================

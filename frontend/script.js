@@ -429,44 +429,115 @@ function renderPreprocessingResult(data) {
     const el = document.getElementById("preprocessing-result");
     if (!el) return;
 
+    const docId = data.index_id || (`D${String(data.doc_id || 1).padStart(2, '0')}`);
+    const rawTokensCount = data.raw_token_count || 0;
+    const cleanTokensCount = data.clean_token_count || 0;
+    const stopwordsCount = data.stopwords_count || 0;
+    const rawVocabCount = data.raw_vocab_count || 0;
+    const cleanVocabCount = data.clean_vocab_count || 0;
+    const vocabRedPct = data.vocab_reduction_pct || 0;
+    const topStopwords = data.top_stopwords || [];
+
+    const cStats = data.corpus_stats || {};
+    const cRawVocab = cStats.corpus_raw_vocab || 0;
+    const cCleanVocab = cStats.corpus_clean_vocab || 0;
+    const cRedPct = cStats.corpus_vocab_reduction_pct || 0;
+    const cTopSw = cStats.corpus_top_stopwords || [];
+
+    let topSwPillsHtml = topStopwords.map(sw => 
+        `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; padding:3px 8px; border-radius:6px; font-size:11.5px; font-weight:600;"><span style="font-family:monospace;">${sw.word}</span> <span style="background:#b45309; color:#ffffff; border-radius:99px; padding:0 5px; font-size:10px;">${sw.count}</span></span>`
+    ).join(' ');
+
+    if (!topSwPillsHtml) {
+        topSwPillsHtml = '<span style="font-size:12px; color:#6b7280;">No stopwords found in snippet.</span>';
+    }
+
+    let corpusSwPillsHtml = cTopSw.slice(0, 10).map(sw => 
+        `<span style="display:inline-flex; align-items:center; gap:4px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:3px 8px; border-radius:6px; font-size:11.5px; font-weight:600;"><span style="font-family:monospace;">${sw.word}</span> <span style="background:#0284c7; color:#ffffff; border-radius:99px; padding:0 5px; font-size:10px;">${sw.count}</span></span>`
+    ).join(' ');
+
     let html = `
     <div class="visual-card">
         <div class="visual-header">
-            <span class="v-badge">Doc ID: <strong>#${data.doc_id || 1}</strong></span>
-            <span class="v-badge primary">Preprocessing Pipeline Stages</span>
+            <span class="v-badge">Doc Index ID: <strong>#${docId}</strong></span>
+            <span class="v-badge primary">Preprocessing &amp; Stop-Words Analysis</span>
         </div>
 
-        <div class="prep-stage">
+        <div class="prep-stage" style="margin-top:10px;">
             <div class="stage-title">1. Raw Text Snippet</div>
-            <div class="raw-text-box">${data.text ? data.text.substring(0, 220) + "..." : "N/A"}</div>
+            <div class="raw-text-box">${data.text ? data.text.substring(0, 240) + "..." : "N/A"}</div>
         </div>
 
         <div class="prep-stage">
             <div class="stage-title">2. Cleaned Normalized Text</div>
-            <div class="raw-text-box">${data.clean_text ? data.clean_text.substring(0, 220) + "..." : "N/A"}</div>
+            <div class="raw-text-box">${data.clean_text ? data.clean_text.substring(0, 240) + "..." : "N/A"}</div>
+        </div>
+
+        <!-- 3. VOCABULARY & TOKEN REDUCTION STATS -->
+        <div style="margin: 16px 0; background:#f0fdf4; border:1px solid #bbf7d0; padding:14px 16px; border-radius:12px;">
+            <h4 style="font-size:13px; color:#166534; font-weight:700; margin-bottom:12px;">📊 3. VOCABULARY REDUCTION ON CORPUS &amp; DOCUMENT</h4>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:12px;">
+                <div style="background:#ffffff; border:1px solid #cbd5e1; padding:10px; border-radius:8px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Doc Raw Vocab</div>
+                    <div style="font-size:18px; font-weight:700; color:#0f172a;">${rawVocabCount}</div>
+                </div>
+                <div style="background:#ffffff; border:1px solid #cbd5e1; padding:10px; border-radius:8px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Doc Clean Vocab</div>
+                    <div style="font-size:18px; font-weight:700; color:#166534;">${cleanVocabCount}</div>
+                </div>
+                <div style="background:#dcfce7; border:1px solid #86efac; padding:10px; border-radius:8px; text-align:center;">
+                    <div style="font-size:11px; color:#15803d; font-weight:700; text-transform:uppercase;">Doc Vocab Reduction</div>
+                    <div style="font-size:18px; font-weight:800; color:#15803d;">${vocabRedPct}%</div>
+                </div>
+                <div style="background:#ffffff; border:1px solid #cbd5e1; padding:10px; border-radius:8px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Corpus Raw Vocab</div>
+                    <div style="font-size:18px; font-weight:700; color:#0f172a;">${cRawVocab.toLocaleString()}</div>
+                </div>
+                <div style="background:#dcfce7; border:1px solid #86efac; padding:10px; border-radius:8px; text-align:center;">
+                    <div style="font-size:11px; color:#15803d; font-weight:700; text-transform:uppercase;">Corpus Reduction</div>
+                    <div style="font-size:18px; font-weight:800; color:#15803d;">${cRedPct}%</div>
+                </div>
+            </div>
+
+            <div style="font-size:12px; color:#15803d; background:rgba(255,255,255,0.7); padding:8px 12px; border-radius:6px;">
+                <strong>Summary:</strong> Stop-word elimination &amp; lowercasing reduced total unique terms in Document #${docId} by <strong>${vocabRedPct}%</strong> (${rawVocabCount} → ${cleanVocabCount} terms). Across the entire active corpus, unique vocabulary was reduced by <strong>${cRedPct}%</strong> (${cRawVocab.toLocaleString()} → ${cCleanVocab.toLocaleString()} terms).
+            </div>
+        </div>
+
+        <!-- 4. STOPWORDS ANALYSIS & STARTER STOPWORDS FOUND -->
+        <div style="margin: 16px 0; background:#fffdf5; border:1px solid #fef08a; padding:14px 16px; border-radius:12px;">
+            <h4 style="font-size:13px; color:#854d0e; font-weight:700; margin-bottom:8px;">
+                🛑 4. STOPWORDS ANALYSIS (Total Removed in Doc: <strong>${stopwordsCount}</strong>)
+            </h4>
+            
+            <p style="font-size:12px; color:#a16207; margin-bottom:6px; font-weight:600;">Starter Stop-words Found (Most Frequently in Doc #${docId}):</p>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
+                ${topSwPillsHtml}
+            </div>
+
+            <p style="font-size:12px; color:#0369a1; margin-bottom:6px; font-weight:600;">Top Starter Stop-words Across Active Corpus:</p>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                ${corpusSwPillsHtml}
+            </div>
         </div>
 
         <div class="prep-stage">
-            <div class="stage-title">3. Tokens without Stop-words (${data.tokens_no_stopwords ? data.tokens_no_stopwords.length : 0} tokens)</div>
+            <div class="stage-title">5. Tokens without Stop-words (${cleanTokensCount} tokens)</div>
             <div class="token-chips-wrapper">
-                ${(data.tokens_no_stopwords || []).slice(0, 35).map(t => `<span class="token-chip">${t}</span>`).join('')}
+                ${(data.tokens_no_stopwords || []).slice(0, 40).map(t => `<span class="token-chip">${t}</span>`).join('')}
             </div>
         </div>
 
         <div class="prep-stage">
-            <div class="stage-title">4. Stemmers Comparison</div>
-            <div style="display:flex; flex-direction:column; gap:6px;">
-                <div><strong style="font-size:11px;">Porter:</strong> <span class="token-chip-str">${(data.porter_tokens || []).slice(0, 12).join(' • ')}</span></div>
-                <div><strong style="font-size:11px;">Snowball:</strong> <span class="token-chip-str">${(data.snowball_tokens || []).slice(0, 12).join(' • ')}</span></div>
-                <div><strong style="font-size:11px;">Lancaster:</strong> <span class="token-chip-str">${(data.lancaster_tokens || []).slice(0, 12).join(' • ')}</span></div>
-            </div>
-        </div>
-
-        <div class="prep-stage">
-            <div class="stage-title">5. Lemmatization (NLTK &amp; spaCy)</div>
-            <div style="display:flex; flex-direction:column; gap:6px;">
-                <div><strong style="font-size:11px;">NLTK Lemmas:</strong> <span class="token-chip-str">${(data.nltk_lemmas || []).slice(0, 12).join(' • ')}</span></div>
-                <div><strong style="font-size:11px;">spaCy Lemmas:</strong> <span class="token-chip-str">${(data.spacy_lemmas || []).slice(0, 12).join(' • ')}</span></div>
+            <div class="stage-title">6. Stemmers &amp; Lemmatizers Comparison</div>
+            <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                <div><strong style="font-size:11px; color:var(--forest);">Porter Stemmer:</strong> <span class="token-chip-str">${(data.porter_tokens || []).slice(0, 12).join(' • ')}</span></div>
+                <div><strong style="font-size:11px; color:var(--forest);">Snowball Stemmer:</strong> <span class="token-chip-str">${(data.snowball_tokens || []).slice(0, 12).join(' • ')}</span></div>
+                <div><strong style="font-size:11px; color:var(--forest);">Lancaster Stemmer:</strong> <span class="token-chip-str">${(data.lancaster_tokens || []).slice(0, 12).join(' • ')}</span></div>
+                <div><strong style="font-size:11px; color:var(--forest);">NLTK Lemmatizer:</strong> <span class="token-chip-str">${(data.nltk_lemmas || []).slice(0, 12).join(' • ')}</span></div>
+                <div><strong style="font-size:11px; color:var(--forest);">spaCy Lemmatizer:</strong> <span class="token-chip-str">${(data.spacy_lemmas || []).slice(0, 12).join(' • ')}</span></div>
+                <div><strong style="font-size:11px; color:#15803d; background:#dcfce7; padding:2px 6px; border-radius:4px; font-weight:700;">Hybrid Lemmatizer ⭐:</strong> <span class="token-chip-str" style="font-weight:600; color:#14532d;">${(data.hybrid_tokens || []).slice(0, 12).join(' • ')}</span></div>
             </div>
         </div>
     </div>
@@ -1261,8 +1332,7 @@ async function searchDocuments() {
             return;
         }
 
-        const pipeElement = document.getElementById("search-pipeline-select");
-        const pipeline = pipeElement ? pipeElement.value : "B";
+        const pipeline = "B";
 
         const startTime =
             performance.now();
