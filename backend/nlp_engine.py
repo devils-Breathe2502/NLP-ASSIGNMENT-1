@@ -119,40 +119,49 @@ def get_document_columns():
 
 def get_statistics():
     """
-    Return basic corpus statistics and assigned document details.
+    Return whole corpus NLP token statistics and assigned document details.
     """
+    total_docs = len(documents)
+
+    all_raw_tokens = []
+    all_clean_tokens = []
+    all_sw_removed = []
+    doc_token_counts = []
+
+    for idx, row in documents.iterrows():
+        raw_text = str(row.get("text", ""))
+        t_raw = [t.lower().strip(".,!?;:()[]\"'") for t in raw_text.split() if t.strip()]
+        all_raw_tokens.extend(t_raw)
+        doc_token_counts.append(len(t_raw))
+
+        sw_removed = [t for t in t_raw if t in NLTK_ENGLISH_STOPWORDS]
+        all_sw_removed.extend(sw_removed)
+
+        c_toks = row.get("tokens_no_stopwords", [])
+        if isinstance(c_toks, list) and c_toks:
+            all_clean_tokens.extend([str(t) for t in c_toks])
+        else:
+            all_clean_tokens.extend([t for t in t_raw if t not in NLTK_ENGLISH_STOPWORDS and len(t) > 2])
+
+    unique_raw_vocab = len(set(all_raw_tokens))
+    unique_clean_vocab = len(set(all_clean_tokens))
 
     stats = {
-        "number_of_documents": len(documents),
-        "number_of_columns": len(documents.columns),
-        "columns": documents.columns.tolist()
+        "number_of_documents": total_docs,
+        "total_words": len(all_raw_tokens),
+        "total_clean_tokens": len(all_clean_tokens),
+        "total_stopwords_removed": len(all_sw_removed),
+        "unique_vocabulary_terms": unique_clean_vocab,
+        "unique_raw_vocabulary": unique_raw_vocab,
+        "average_tokens_per_doc": round(len(all_raw_tokens) / max(total_docs, 1), 1),
+        "min_tokens_per_doc": min(doc_token_counts) if doc_token_counts else 0,
+        "max_tokens_per_doc": max(doc_token_counts) if doc_token_counts else 0,
     }
-
-    if "text" in documents.columns:
-        text_lengths = documents["text"].fillna("").astype(str).str.len()
-
-        stats["total_characters"] = int(
-            text_lengths.sum()
-        )
-
-        stats["average_characters_per_document"] = round(
-            float(text_lengths.mean()),
-            2
-        )
-
-        stats["minimum_characters"] = int(
-            text_lengths.min()
-        )
-
-        stats["maximum_characters"] = int(
-            text_lengths.max()
-        )
 
     assigned_docs = []
     for idx, row in documents.iterrows():
         doc_id = row.get("doc_id", idx + 1)
         
-        # Format index_id like D01, D02 if doc_id is numeric
         if str(doc_id).isdigit():
             index_id = f"D{int(doc_id):02d}"
         else:
@@ -168,6 +177,8 @@ def get_statistics():
         elif not fmt:
             fmt = "TXT"
 
+        t_raw = [t for t in raw_text.split() if t.strip()]
+
         assigned_docs.append({
             "doc_id": doc_id,
             "index_id": index_id,
@@ -176,12 +187,12 @@ def get_statistics():
             "owner": str(row.get("owner", "N/A")) if pd.notna(row.get("owner")) else "N/A",
             "topic": str(row.get("topic", "Agricultural Topic")) if pd.notna(row.get("topic")) else "General",
             "source": str(row.get("source", "Corpus")) if pd.notna(row.get("source")) else "N/A",
+            "token_count": len(t_raw),
             "char_count": len(raw_text),
             "snippet": snippet
         })
 
     stats["assigned_documents"] = assigned_docs
-
     return stats
 
 

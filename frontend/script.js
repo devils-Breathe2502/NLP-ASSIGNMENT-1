@@ -149,19 +149,13 @@ function renderDocumentStatistics(data) {
     }
 
     const totalDocs = data.number_of_documents || 0;
-
-    const totalChars = (data.total_characters || 0).toLocaleString();
-
-    const avgChars = (data.average_characters_per_document || 0).toLocaleString();
-
-    const minChars = (data.minimum_characters || 0).toLocaleString();
-
-    const maxChars = (data.maximum_characters || 0).toLocaleString();
-
-    const totalCols = data.number_of_columns || 0;
+    const totalWords = (data.total_words || 0).toLocaleString();
+    const totalCleanTokens = (data.total_clean_tokens || 0).toLocaleString();
+    const totalStopwords = (data.total_stopwords_removed || 0).toLocaleString();
+    const uniqueVocab = (data.unique_vocabulary_terms || 0).toLocaleString();
+    const avgTokens = (data.average_tokens_per_doc || 0).toLocaleString();
 
     const assignedDocs = data.assigned_documents || [];
-
 
     const navPill = document.getElementById("nav-corpus-count");
     if (navPill) {
@@ -174,28 +168,33 @@ function renderDocumentStatistics(data) {
         <div class="stats-cards-grid">
 
             <div class="stat-card">
-                <span class="label">Total Documents</span>
-                <span class="val">${totalDocs}</span>
+                <span class="label">Total Corpus Documents</span>
+                <span class="val">${totalDocs} Docs</span>
             </div>
 
             <div class="stat-card">
-                <span class="label">Total Characters</span>
-                <span class="val">${totalChars}</span>
+                <span class="label">Total Raw Tokens</span>
+                <span class="val">${totalWords}</span>
             </div>
 
             <div class="stat-card">
-                <span class="label">Avg Chars/Doc</span>
-                <span class="val">${avgChars}</span>
+                <span class="label">Total Clean Tokens</span>
+                <span class="val">${totalCleanTokens}</span>
             </div>
 
             <div class="stat-card">
-                <span class="label">Min / Max Length</span>
-                <span class="val">${minChars} / ${maxChars}</span>
+                <span class="label">Unique Vocabulary</span>
+                <span class="val">${uniqueVocab} Terms</span>
             </div>
 
             <div class="stat-card">
-                <span class="label">Corpus Columns</span>
-                <span class="val">${totalCols}</span>
+                <span class="label">Avg Tokens / Doc</span>
+                <span class="val">${avgTokens}</span>
+            </div>
+
+            <div class="stat-card">
+                <span class="label">Stopwords Removed</span>
+                <span class="val">${totalStopwords}</span>
             </div>
 
         </div>
@@ -221,7 +220,7 @@ function renderDocumentStatistics(data) {
                         <th style="width:85px;">Format</th>
                         <th style="width:230px;">Topic</th>
                         <th style="width:140px;">Owner / Source</th>
-                        <th style="width:110px; text-align:right;">Char Count</th>
+                        <th style="width:110px; text-align:right;">Total Tokens</th>
                     </tr>
                 </thead>
 
@@ -242,7 +241,7 @@ function renderDocumentStatistics(data) {
                 <td style="width:85px;"><span class="fmt-tag ${fmtClass}">${doc.format}</span></td>
                 <td class="cell-topic" style="width:230px;">${doc.topic}</td>
                 <td style="color:#60736a; font-size:12px; width:140px;">${doc.owner !== 'N/A' ? doc.owner : doc.source}</td>
-                <td style="font-family:'DM Mono', monospace; font-weight:700; width:110px; text-align:right;">${(doc.char_count || 0).toLocaleString()}</td>
+                <td style="font-family:'DM Mono', monospace; font-weight:700; width:110px; text-align:right;">${(doc.token_count || 0).toLocaleString()}</td>
             </tr>
         `;
     });
