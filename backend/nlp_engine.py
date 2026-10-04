@@ -432,16 +432,15 @@ def search_documents(query, pipeline="B"):
     ]
 
     index_data = get_inverted_index()
+    matched_doc_ids = set()
 
-    matched_documents = set()
-
+    # 1. Search term postings in inverted index
     if index_data:
         for term in query_terms:
             entry = index_data.get(term, None)
             if entry is None:
                 continue
 
-            # Each entry is {"df": ..., "cf": ..., "postings": [...]}
             if isinstance(entry, dict):
                 postings = entry.get("postings", [])
             elif isinstance(entry, list):
@@ -449,63 +448,69 @@ def search_documents(query, pipeline="B"):
             else:
                 continue
 
-            for doc_id in postings:
-                matched_documents.add(str(doc_id))
+            for raw_id in postings:
+                str_id = str(raw_id).strip()
+                if str_id.upper().startswith("D"):
+                    num_part = str_id[1:].lstrip("0") or "0"
+                    if num_part.isdigit():
+                        matched_doc_ids.add(int(num_part))
+                    else:
+                        matched_doc_ids.add(str_id)
+                elif str_id.isdigit():
+                    matched_doc_ids.add(int(str_id))
+                else:
+                    matched_doc_ids.add(str_id)
 
-    # Supplemental full-text fallback search across documents DataFrame
-    # Ensures newly uploaded documents or terms are always found
+    # 2. Supplemental full-text search across documents DataFrame
     for idx, row in documents.iterrows():
         doc_id = row.get("doc_id", idx + 1)
-        index_id = f"D{int(doc_id):02d}" if str(doc_id).isdigit() else str(doc_id)
-        
         full_text = (str(row.get("text", "")) + " " + str(row.get("clean_text", ""))).lower()
         
         if any(q_term in full_text for q_term in query_terms):
-            matched_documents.add(str(index_id))
-            matched_documents.add(str(doc_id))
-        else:
-            continue
+            if str(doc_id).isdigit():
+                matched_doc_ids.add(int(doc_id))
+            else:
+                matched_doc_ids.add(str(doc_id))
 
-        for doc_id in postings:
-            matched_documents.add(
-                str(doc_id)
-            )
-
+    # 3. Retrieve matching rows and format output uniquely
     results = []
+    seen_doc_ids = set()
 
-    for doc_id in sorted(matched_documents):
+    sorted_ids = sorted(
+        matched_doc_ids,
+        key=lambda x: (0, int(x)) if isinstance(x, int) or str(x).isdigit() else (1, str(x))
+    )
 
-        # Index uses "D01", "D02" format;
-        # DataFrame uses integer doc_id (1, 2, ...).
-        # Try both the raw value and the numeric part.
-        numeric_id = doc_id
-        if doc_id.upper().startswith("D"):
-            numeric_id = doc_id[1:].lstrip("0") or "0"
+    for doc_id_key in sorted_ids:
+        numeric_str = str(doc_id_key)
+        formatted_index_id = f"D{int(doc_id_key):02d}" if numeric_str.isdigit() else numeric_str
 
         matching_rows = documents[
-            (documents["doc_id"].astype(str) == str(doc_id)) |
-            (documents["doc_id"].astype(str) == numeric_id)
+            (documents["doc_id"].astype(str) == numeric_str) |
+            (documents["doc_id"].astype(str) == formatted_index_id) |
+            (documents.index.astype(str) == numeric_str)
         ]
 
         if len(matching_rows) == 0:
             continue
 
         row = matching_rows.iloc[0]
+        actual_doc_id = row["doc_id"]
+
+        # Prevent duplicate entries for the same document
+        if actual_doc_id in seen_doc_ids:
+            continue
+        seen_doc_ids.add(actual_doc_id)
+
+        index_id = f"D{int(actual_doc_id):02d}" if str(actual_doc_id).isdigit() else str(actual_doc_id)
 
         result_entry = {
-            "doc_id": row["doc_id"],
-            "index_id": doc_id,
-            "file_name": row.get(
-                "file_name",
-                ""
-            ),
-            "topic": row.get(
-                "topic",
-                ""
-            )
+            "doc_id": actual_doc_id,
+            "index_id": index_id,
+            "file_name": row.get("file_name", ""),
+            "topic": row.get("topic", "")
         }
 
-        # Include a text snippet for context
         if "text" in row.index and row.get("text"):
             text = str(row["text"])
             result_entry["snippet"] = (
