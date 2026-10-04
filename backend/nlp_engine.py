@@ -425,54 +425,101 @@ def search_documents(query, pipeline="B"):
             "results": []
         }
 
+    pipeline = str(pipeline).strip().upper()
+    if pipeline not in ["A", "B", "C"]:
+        pipeline = "B"
+
     query_terms = [
         term.lower()
         for term in query.split()
         if term.strip()
     ]
 
-    index_data = get_inverted_index()
     matched_doc_ids = set()
 
-    # 1. Search term postings in inverted index
-    if index_data:
-        for term in query_terms:
-            entry = index_data.get(term, None)
-            if entry is None:
-                continue
+    # NLTK English stopwords for Pipeline A filtering
+    NLTK_ENGLISH_STOPWORDS = {
+        "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
+        "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers",
+        "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
+        "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are",
+        "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does",
+        "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until",
+        "while", "of", "at", "by", "for", "with", "about", "against", "between", "into",
+        "through", "during", "before", "after", "above", "below", "to", "from", "up", "down",
+        "in", "out", "on", "off", "over", "under", "again", "further", "then", "once"
+    }
 
-            if isinstance(entry, dict):
-                postings = entry.get("postings", [])
-            elif isinstance(entry, list):
-                postings = entry
-            else:
-                continue
+    if pipeline == "A":
+        # PIPELINE A: Standard NLTK Tokenizer + Porter Stemmer + NLTK Stopwords
+        filtered_query_terms = [q for q in query_terms if q not in NLTK_ENGLISH_STOPWORDS]
 
-            for raw_id in postings:
-                str_id = str(raw_id).strip()
-                if str_id.upper().startswith("D"):
-                    num_part = str_id[1:].lstrip("0") or "0"
-                    if num_part.isdigit():
-                        matched_doc_ids.add(int(num_part))
+        if filtered_query_terms:
+            for idx, row in documents.iterrows():
+                doc_id = row.get("doc_id", idx + 1)
+                porter_toks = [str(t).lower() for t in row.get("porter_tokens", [])]
+                nltk_toks = [str(t).lower() for t in row.get("nltk_tokens", [])]
+                combined_a = set(porter_toks + nltk_toks)
+
+                if any(q in combined_a for q in filtered_query_terms):
+                    matched_doc_ids.add(doc_id)
+
+    elif pipeline == "C":
+        # PIPELINE C: Aggressive Regex Tokenizer + Lancaster Stemmer
+        for idx, row in documents.iterrows():
+            doc_id = row.get("doc_id", idx + 1)
+            lancaster_toks = [str(t).lower() for t in row.get("lancaster_tokens", [])]
+            snowball_toks = [str(t).lower() for t in row.get("snowball_tokens", [])]
+            combined_c = set(lancaster_toks + snowball_toks)
+
+            if any(q in combined_c for q in query_terms):
+                matched_doc_ids.add(doc_id)
+
+    else:
+        # PIPELINE B: Hybrid Agricultural Tokenizer + Lemmatization + Inverted Index (Optimal ⭐)
+        index_data = get_inverted_index()
+        if index_data:
+            for term in query_terms:
+                entry = index_data.get(term, None)
+                if entry is None:
+                    continue
+
+                if isinstance(entry, dict):
+                    postings = entry.get("postings", [])
+                elif isinstance(entry, list):
+                    postings = entry
+                else:
+                    continue
+
+                for raw_id in postings:
+                    str_id = str(raw_id).strip()
+                    if str_id.upper().startswith("D"):
+                        num_part = str_id[1:].lstrip("0") or "0"
+                        if num_part.isdigit():
+                            matched_doc_ids.add(int(num_part))
+                        else:
+                            matched_doc_ids.add(str_id)
+                    elif str_id.isdigit():
+                        matched_doc_ids.add(int(str_id))
                     else:
                         matched_doc_ids.add(str_id)
-                elif str_id.isdigit():
-                    matched_doc_ids.add(int(str_id))
+
+        # Fallback check against hybrid_tokens & tokens_no_stopwords
+        for idx, row in documents.iterrows():
+            doc_id = row.get("doc_id", idx + 1)
+            hybrid_toks = [str(t).lower() for t in row.get("hybrid_tokens", [])]
+            clean_toks = [str(t).lower() for t in row.get("tokens_no_stopwords", [])]
+            combined_b = set(hybrid_toks + clean_toks)
+            
+            full_text = (str(row.get("text", "")) + " " + str(row.get("clean_text", ""))).lower()
+
+            if any(q in combined_b or q in full_text for q in query_terms):
+                if str(doc_id).isdigit():
+                    matched_doc_ids.add(int(doc_id))
                 else:
-                    matched_doc_ids.add(str_id)
+                    matched_doc_ids.add(str(doc_id))
 
-    # 2. Supplemental full-text search across documents DataFrame
-    for idx, row in documents.iterrows():
-        doc_id = row.get("doc_id", idx + 1)
-        full_text = (str(row.get("text", "")) + " " + str(row.get("clean_text", ""))).lower()
-        
-        if any(q_term in full_text for q_term in query_terms):
-            if str(doc_id).isdigit():
-                matched_doc_ids.add(int(doc_id))
-            else:
-                matched_doc_ids.add(str(doc_id))
-
-    # 3. Retrieve matching rows and format output uniquely
+    # Retrieve matching rows and format output uniquely
     results = []
     seen_doc_ids = set()
 
@@ -497,7 +544,6 @@ def search_documents(query, pipeline="B"):
         row = matching_rows.iloc[0]
         actual_doc_id = row["doc_id"]
 
-        # Prevent duplicate entries for the same document
         if actual_doc_id in seen_doc_ids:
             continue
         seen_doc_ids.add(actual_doc_id)

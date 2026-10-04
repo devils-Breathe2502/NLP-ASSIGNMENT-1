@@ -698,37 +698,44 @@ function renderSearchResults(data) {
     if (!el) return;
 
     const query = data.query || "";
-    const queryType = data.query_type || "keyword";
     const pipeline = data.pipeline || "B";
     const execTime = data.execution_time_ms || 0;
     const retrieval = data.retrieval || {};
     const results = retrieval.results || [];
     const count = retrieval.result_count || results.length;
 
+    // Auto-detect Query Mode from query string
+    let autoQueryType = "KEYWORD";
+    if (/\b(AND|OR|NOT)\b|&&|\|\||!/i.test(query)) {
+        autoQueryType = "BOOLEAN";
+    } else if (/"[^"]+"/.test(query) || query.includes(" ")) {
+        autoQueryType = "PHRASE / MULTI-TERM";
+    }
+
     let pipeBadgeHtml = '';
     if (pipeline === "B") {
-        pipeBadgeHtml = `<span class="v-badge primary" style="background:var(--lime); color:var(--forest); font-weight:700;">Pipeline B (Optimal Hybrid ⭐) — Precision: 84.5%</span>`;
+        pipeBadgeHtml = `<span class="v-badge primary" style="background:var(--lime); color:var(--forest); font-weight:700;">Pipeline B (Hybrid Agricultural ⭐)</span>`;
     } else if (pipeline === "A") {
-        pipeBadgeHtml = `<span class="v-badge" style="background:#fef08a; color:#854d0e; font-weight:700;">Pipeline A (Standard NLTK) — Precision: 83.7%</span>`;
+        pipeBadgeHtml = `<span class="v-badge" style="background:#fef08a; color:#854d0e; font-weight:700;">Pipeline A (Standard NLTK Baseline)</span>`;
     } else {
-        pipeBadgeHtml = `<span class="v-badge" style="background:#ffedd5; color:#9a3412; font-weight:700;">Pipeline C (Aggressive Stemming) — Precision: 84.5%</span>`;
+        pipeBadgeHtml = `<span class="v-badge" style="background:#ffedd5; color:#9a3412; font-weight:700;">Pipeline C (Aggressive Stemmer)</span>`;
     }
 
     let html = `
     <div style="margin-top:10px;">
-        <div class="visual-header" style="margin-bottom:14px; border-bottom-color:rgba(255,255,255,0.2);">
-            <span class="v-badge">Query: <strong style="color:var(--lime);">${query}</strong></span>
-            <span class="v-badge">Mode: <strong>${queryType.toUpperCase()}</strong></span>
+        <div class="visual-header" style="margin-bottom:14px; padding:10px 14px; background:rgba(0,0,0,0.3); border-radius:10px; border-bottom:1px solid rgba(255,255,255,0.2);">
+            <span class="v-badge" style="color:#ffffff;">Query: <strong style="color:var(--lime); font-size:14px;">${query}</strong></span>
+            <span class="v-badge" style="color:#ffffff;">Mode: <strong style="color:#ffffff;">${autoQueryType}</strong></span>
             ${pipeBadgeHtml}
-            <span class="v-badge">Time: <strong>${execTime} ms</strong></span>
-            <span class="v-badge primary" style="background:rgba(255,255,255,0.2); color:#ffffff;">Matches: <strong>${count} Documents</strong></span>
+            <span class="v-badge" style="color:#ffffff;">Time: <strong style="color:#ffffff;">${execTime} ms</strong></span>
+            <span class="v-badge primary" style="background:rgba(255,255,255,0.25); color:#ffffff; font-weight:700;">Matches: ${count} Documents</span>
         </div>
     `;
 
     if (!results.length) {
         html += `
-            <div style="padding:16px; background:rgba(255,255,255,0.1); border-radius:12px; color:rgba(255,255,255,0.85);">
-                No matching documents found for query <strong>"${query}"</strong> in Pipeline ${pipeline}.
+            <div style="padding:16px; background:rgba(255,255,255,0.1); border-radius:12px; color:rgba(255,255,255,0.95);">
+                No matching documents found for query <strong>"${query}"</strong> under <strong>Pipeline ${pipeline}</strong>.
             </div>
         `;
     } else {
