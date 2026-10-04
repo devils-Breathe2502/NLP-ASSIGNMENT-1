@@ -416,9 +416,84 @@ def get_positional_index():
 # SEARCH ENGINE
 # ============================================================
 
+import re
+
+# ============================================================
+# SEARCH ENGINE HELPER FOR PIPELINE EVALUATION
+# ============================================================
+
+NLTK_ENGLISH_STOPWORDS = {
+    "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
+    "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers",
+    "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
+    "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are",
+    "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does",
+    "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until",
+    "while", "of", "at", "by", "for", "with", "about", "against", "between", "into",
+    "through", "during", "before", "after", "above", "below", "to", "from", "up", "down",
+    "in", "out", "on", "off", "over", "under", "again", "further", "then", "once"
+}
+
+
+def eval_doc_match_term(term, row, pipeline):
+    """
+    Check if a single search term matches a document row under the given pipeline rules.
+    Uses exact word token sets and regex word boundaries (never loose substring matches).
+    """
+    term = str(term).strip().lower()
+    if not term:
+        return False
+
+    if pipeline == "A":
+        # PIPELINE A: Standard NLTK Tokenizer + Porter Stemmer + NLTK Stopwords
+        if term in NLTK_ENGLISH_STOPWORDS:
+            return False
+
+        porter_toks = set(str(t).lower() for t in row.get("porter_tokens", []))
+        nltk_toks = set(str(t).lower() for t in row.get("nltk_tokens", []))
+        combined_a = porter_toks.union(nltk_toks)
+
+        if term in combined_a:
+            return True
+
+        text_str = str(row.get("text", "")).lower()
+        if re.search(r'\b' + re.escape(term) + r'\b', text_str):
+            return True
+
+        return False
+
+    elif pipeline == "C":
+        # PIPELINE C: Aggressive Regex Tokenizer + Lancaster Stemmer
+        lancaster_toks = set(str(t).lower() for t in row.get("lancaster_tokens", []))
+        snowball_toks = set(str(t).lower() for t in row.get("snowball_tokens", []))
+        combined_c = lancaster_toks.union(snowball_toks)
+
+        if term in combined_c:
+            return True
+
+        return False
+
+    else:
+        # PIPELINE B: Hybrid Agricultural Tokenizer + Lemmatization (Optimal ⭐)
+        hybrid_toks = set(str(t).lower() for t in row.get("hybrid_tokens", []))
+        clean_toks = set(str(t).lower() for t in row.get("tokens_no_stopwords", []))
+        lemmas = set(str(t).lower() for t in row.get("nltk_lemmas", []))
+        combined_b = hybrid_toks.union(clean_toks).union(lemmas)
+
+        if term in combined_b:
+            return True
+
+        text_str = str(row.get("text", "")).lower()
+        clean_str = str(row.get("clean_text", "")).lower()
+        if re.search(r'\b' + re.escape(term) + r'\b', text_str) or re.search(r'\b' + re.escape(term) + r'\b', clean_str):
+            return True
+
+        return False
+
+
 def search_documents(query, pipeline="B"):
 
-    if not query:
+    if not query or not str(query).strip():
         return {
             "query": "",
             "pipeline": pipeline,
@@ -429,95 +504,50 @@ def search_documents(query, pipeline="B"):
     if pipeline not in ["A", "B", "C"]:
         pipeline = "B"
 
-    query_terms = [
-        term.lower()
-        for term in query.split()
-        if term.strip()
-    ]
-
+    raw_query = str(query).strip()
     matched_doc_ids = set()
 
-    # NLTK English stopwords for Pipeline A filtering
-    NLTK_ENGLISH_STOPWORDS = {
-        "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
-        "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers",
-        "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
-        "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are",
-        "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does",
-        "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until",
-        "while", "of", "at", "by", "for", "with", "about", "against", "between", "into",
-        "through", "during", "before", "after", "above", "below", "to", "from", "up", "down",
-        "in", "out", "on", "off", "over", "under", "again", "further", "then", "once"
-    }
+    # Detect Boolean Query Structure
+    has_or = bool(re.search(r'\bOR\b|\bor\b', raw_query))
+    has_and = bool(re.search(r'\bAND\b|\band\b', raw_query))
+    has_not = bool(re.search(r'\bNOT\b|\bnot\b', raw_query))
 
-    if pipeline == "A":
-        # PIPELINE A: Standard NLTK Tokenizer + Porter Stemmer + NLTK Stopwords
-        filtered_query_terms = [q for q in query_terms if q not in NLTK_ENGLISH_STOPWORDS]
-
-        if filtered_query_terms:
-            for idx, row in documents.iterrows():
-                doc_id = row.get("doc_id", idx + 1)
-                porter_toks = [str(t).lower() for t in row.get("porter_tokens", [])]
-                nltk_toks = [str(t).lower() for t in row.get("nltk_tokens", [])]
-                combined_a = set(porter_toks + nltk_toks)
-
-                if any(q in combined_a for q in filtered_query_terms):
-                    matched_doc_ids.add(doc_id)
-
-    elif pipeline == "C":
-        # PIPELINE C: Aggressive Regex Tokenizer + Lancaster Stemmer
+    if has_or and not (has_and or has_not):
+        # Evaluate OR query: term1 OR term2
+        sub_terms = [t.strip() for t in re.split(r'\bOR\b|\bor\b', raw_query, flags=re.IGNORECASE) if t.strip()]
         for idx, row in documents.iterrows():
             doc_id = row.get("doc_id", idx + 1)
-            lancaster_toks = [str(t).lower() for t in row.get("lancaster_tokens", [])]
-            snowball_toks = [str(t).lower() for t in row.get("snowball_tokens", [])]
-            combined_c = set(lancaster_toks + snowball_toks)
+            if any(eval_doc_match_term(st, row, pipeline) for st in sub_terms):
+                matched_doc_ids.add(doc_id)
 
-            if any(q in combined_c for q in query_terms):
+    elif has_and and not (has_or or has_not):
+        # Evaluate AND query: term1 AND term2
+        sub_terms = [t.strip() for t in re.split(r'\bAND\b|\band\b', raw_query, flags=re.IGNORECASE) if t.strip()]
+        for idx, row in documents.iterrows():
+            doc_id = row.get("doc_id", idx + 1)
+            if all(eval_doc_match_term(st, row, pipeline) for st in sub_terms):
+                matched_doc_ids.add(doc_id)
+
+    elif has_not:
+        # Evaluate NOT query: term1 NOT term2
+        parts = [t.strip() for t in re.split(r'\bNOT\b|\bnot\b', raw_query, flags=re.IGNORECASE) if t.strip()]
+        pos_terms = parts[0].split() if parts else []
+        neg_terms = parts[1:] if len(parts) > 1 else []
+
+        for idx, row in documents.iterrows():
+            doc_id = row.get("doc_id", idx + 1)
+            pos_match = any(eval_doc_match_term(pt, row, pipeline) for pt in pos_terms) if pos_terms else True
+            neg_match = any(eval_doc_match_term(nt, row, pipeline) for nt in neg_terms) if neg_terms else False
+            if pos_match and not neg_match:
                 matched_doc_ids.add(doc_id)
 
     else:
-        # PIPELINE B: Hybrid Agricultural Tokenizer + Lemmatization + Inverted Index (Optimal ⭐)
-        index_data = get_inverted_index()
-        if index_data:
-            for term in query_terms:
-                entry = index_data.get(term, None)
-                if entry is None:
-                    continue
-
-                if isinstance(entry, dict):
-                    postings = entry.get("postings", [])
-                elif isinstance(entry, list):
-                    postings = entry
-                else:
-                    continue
-
-                for raw_id in postings:
-                    str_id = str(raw_id).strip()
-                    if str_id.upper().startswith("D"):
-                        num_part = str_id[1:].lstrip("0") or "0"
-                        if num_part.isdigit():
-                            matched_doc_ids.add(int(num_part))
-                        else:
-                            matched_doc_ids.add(str_id)
-                    elif str_id.isdigit():
-                        matched_doc_ids.add(int(str_id))
-                    else:
-                        matched_doc_ids.add(str_id)
-
-        # Fallback check against hybrid_tokens & tokens_no_stopwords
+        # Multi-term / Keyword Query: Match documents containing query terms
+        query_terms = [t.lower().strip() for t in raw_query.split() if t.strip()]
         for idx, row in documents.iterrows():
             doc_id = row.get("doc_id", idx + 1)
-            hybrid_toks = [str(t).lower() for t in row.get("hybrid_tokens", [])]
-            clean_toks = [str(t).lower() for t in row.get("tokens_no_stopwords", [])]
-            combined_b = set(hybrid_toks + clean_toks)
-            
-            full_text = (str(row.get("text", "")) + " " + str(row.get("clean_text", ""))).lower()
-
-            if any(q in combined_b or q in full_text for q in query_terms):
-                if str(doc_id).isdigit():
-                    matched_doc_ids.add(int(doc_id))
-                else:
-                    matched_doc_ids.add(str(doc_id))
+            if any(eval_doc_match_term(qt, row, pipeline) for qt in query_terms):
+                matched_doc_ids.add(doc_id)
 
     # Retrieve matching rows and format output uniquely
     results = []
@@ -570,9 +600,8 @@ def search_documents(query, pipeline="B"):
     return {
         "query": query,
         "pipeline": pipeline,
-        "query_terms": query_terms,
-        "result_count": len(results),
-        "results": results
+        "results": results,
+        "result_count": len(results)
     }
 
 # ============================================================
