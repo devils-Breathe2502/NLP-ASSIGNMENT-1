@@ -828,8 +828,6 @@ function renderSearchResults(data) {
             html += `
                 <div class="search-res-card">
                     <div class="search-res-top">
-                        <span class="search-res-num">#${i + 1}</span>
-                        <span class="badge-docid">#${res.doc_id}</span>
                         <span class="badge-indexid">${res.index_id || ('D' + String(res.doc_id).padStart(2, '0'))}</span>
                         <strong class="search-res-file">${res.file_name}</strong>
                         <span class="search-res-topic">${res.topic || 'Agricultural Topic'}</span>
