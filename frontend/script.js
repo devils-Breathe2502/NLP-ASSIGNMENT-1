@@ -1331,7 +1331,8 @@ async function searchDocuments() {
             return;
         }
 
-        const pipeline = "B";
+        const pipeElement = document.getElementById("search-pipeline-select");
+        const pipeline = pipeElement ? pipeElement.value : "B";
 
         const startTime =
             performance.now();
